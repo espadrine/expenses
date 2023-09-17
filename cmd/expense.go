@@ -3,14 +3,25 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
+
+	expense "github.com/espadrine/expenses/src"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
+	params := expense.ParseFlags()
 	db := openDB()
 	defer db.Close()
-	listUsers(db)
+	params.Command.Execute(&params)
+	// FIXME: the logic should be inside Execute().
+	switch params.Command.Names[0] {
+	case "users":
+		fallthrough
+	case "list":
+		listUsers(db)
+	}
 }
 
 func openDB() *sql.DB {
