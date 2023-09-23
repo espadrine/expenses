@@ -43,7 +43,7 @@ func init() {
 type Command struct {
 	Names       []string
 	doc         string
-	Execute     func(*Params)
+	Execute     func(*Params, *Store)
 	subcommands []Command
 }
 
@@ -85,7 +85,7 @@ func isSubcommandName(name string, command Command) bool {
 	return false
 }
 
-func printHelp(params *Params) {
+func printHelp(params *Params, store *Store) {
 	fmt.Fprint(os.Stderr, helpString(params))
 }
 
@@ -117,4 +117,9 @@ func helpString(params *Params) string {
 	return usageLine + "\n\n" + commandHelp
 }
 
-func listUsers(params *Params) {}
+func listUsers(params *Params, store *Store) {
+	fmt.Println("Users:")
+	for _, user := range store.getUsers() {
+		fmt.Println("-", user)
+	}
+}
