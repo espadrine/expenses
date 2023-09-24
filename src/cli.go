@@ -2,6 +2,7 @@ package expense
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"slices"
 )
@@ -20,8 +21,8 @@ func init() {
 				Execute: printHelp,
 			},
 			{
-				Names:   []string{"users"},
-				doc:     "analyze of modify users",
+				Names:   []string{"user"},
+				doc:     "analyze or modify users",
 				Execute: listUsers,
 				subcommands: []Command{
 					{
@@ -118,8 +119,11 @@ func helpString(params *Params) string {
 }
 
 func listUsers(params *Params, store *Store) {
-	fmt.Println("Users:")
-	for _, user := range store.getUsers() {
-		fmt.Println("-", user)
+	users, err := store.getUsers()
+	if err != nil {
+		log.Fatalf("listUsers: %s\n", err)
+	}
+	for _, user := range users {
+		fmt.Println(user.id + "\t" + user.name)
 	}
 }

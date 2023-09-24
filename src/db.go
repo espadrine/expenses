@@ -2,7 +2,10 @@ package expense
 
 import (
 	"database/sql"
-	"log"
+	"embed"
+	"os"
+	"path/filepath"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -11,35 +14,94 @@ type Store struct {
 	db *sql.DB
 }
 
-func NewDB() Store {
-	db, err := sql.Open("sqlite3", "./db.sqlite")
+func NewDB() (*Store, error) {
+	db, isInit, err := initConfig()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return Store{
-		db: db,
+	store := Store{db}
+	if !isInit {
+		err = store.initDB()
+		if err != nil {
+			return nil, err
+		}
 	}
+	return &store, nil
+}
+
+func initConfig() (db *sql.DB, alreadyInit bool, err error) {
+	alreadyInit = true
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	configPath := filepath.Join(homeDir, ".config")
+	expensePath := filepath.Join(configPath, "expense")
+	dbPath := filepath.Join(expensePath, "db.sqlite")
+
+	// Ensure ~/.config is there.
+	_, err = os.Stat(configPath)
+	if os.IsNotExist(err) {
+		alreadyInit = false
+		err := os.Mkdir(configPath, 0755)
+		if err != nil {
+			return nil, alreadyInit, err
+		}
+	} else if err != nil {
+		return
+	}
+
+	// Ensure ~/.config/expense is there.
+	_, err = os.Stat(expensePath)
+	if os.IsNotExist(err) {
+		alreadyInit = false
+		err := os.Mkdir(expensePath, 0700)
+		if err != nil {
+			return nil, alreadyInit, err
+		}
+	} else if err != nil {
+		return
+	}
+
+	db, err = sql.Open("sqlite3", dbPath)
+	return
+}
+
+func (s *Store) initDB() (err error) {
+	err = migrateDB(s.db)
+	if err != nil {
+		return
+	}
+	// If the user is not defined, let’s add it.
+	username := os.Getenv("USER")
+	_, err = s.getUser(username)
+	if err == sql.ErrNoRows {
+		err = nil
+		_, err = s.createUser(username)
+		return
+	}
+	return
+}
+
+//go:embed sql/*.sql
+var sqlMigrations embed.FS
+
+func migrateDB(db *sql.DB) error {
+	migration, err := sqlMigrations.ReadFile("sql/v0.sql")
+	if err != nil {
+		return err
+	}
+	// Execute the migration one statement at a time.
+	sqlStatements := strings.Split(string(migration), ";")
+	for _, stmt := range sqlStatements {
+		_, err = db.Exec(stmt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Store) Close() {
 	s.db.Close()
-}
-
-func (s *Store) getUsers() []string {
-	var users []string
-	sqlStmt := `select * from users`
-	rows, err := s.db.Query(sqlStmt)
-	if err != nil {
-		log.Fatalf("%q: %s\n", err, sqlStmt)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var name string
-		err = rows.Scan(&name)
-		users = append(users, name)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	return users
 }
