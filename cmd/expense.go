@@ -2,12 +2,13 @@ package main
 
 import (
 	"log"
+	"os"
 
 	expense "github.com/espadrine/expenses/src"
 )
 
 func main() {
-	params := expense.ParseFlags()
+	params := expense.ParseFlags(os.Args[1:])
 	store, err := expense.NewDB()
 	if err != nil {
 		log.Fatalf("NewDB: %s\n", err)

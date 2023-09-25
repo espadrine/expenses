@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"slices"
+	"strings"
 )
 
 var toplevelCommand Command
@@ -14,26 +15,31 @@ func init() {
 		Names:   []string{"expense"},
 		doc:     "analyze expenses",
 		Execute: printHelp,
+		id:      1,
 		subcommands: []Command{
 			{
 				Names:   []string{"help", "--help", "-h"},
 				doc:     "print this usage information",
 				Execute: printHelp,
+				id:      2,
 			},
 			{
 				Names:   []string{"user"},
 				doc:     "analyze or modify users",
 				Execute: listUsers,
+				id:      3,
 				subcommands: []Command{
 					{
 						Names:   []string{"help", "--help", "-h"},
 						doc:     "print this usage information",
 						Execute: printHelp,
+						id:      4,
 					},
 					{
 						Names:   []string{"list"},
 						doc:     "list the known usernames",
 						Execute: listUsers,
+						id:      5,
 					},
 				},
 			},
@@ -45,7 +51,12 @@ type Command struct {
 	Names       []string
 	doc         string
 	Execute     func(*Params, *Store)
+	id          int // These IDs only stay the same within an execution.
 	subcommands []Command
+}
+
+func (c *Command) String() string {
+	return fmt.Sprintf("Command{id: %d, name: %s}", c.id, c.Names[0])
 }
 
 type Params struct {
@@ -53,9 +64,18 @@ type Params struct {
 	CommandChain []Command
 }
 
-func ParseFlags() Params {
+func (p *Params) String() string {
+	var chainStrings []string
+	for _, command := range p.CommandChain {
+		chainStrings = append(chainStrings, command.String())
+	}
+	chain := "[" + strings.Join(chainStrings, ", ") + "]"
+	return fmt.Sprintf("Params{%v, chain: %s}", &p.Command, chain)
+}
+
+func ParseFlags(args []string) Params {
 	var params Params
-	params.CommandChain = parseCommandChain(os.Args[1:], toplevelCommand)
+	params.CommandChain = parseCommandChain(args, toplevelCommand)
 	params.Command = params.CommandChain[len(params.CommandChain)-1]
 	return params
 }
