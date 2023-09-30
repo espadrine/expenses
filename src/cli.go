@@ -12,32 +12,36 @@ var toplevelCommand Command
 
 func init() {
 	toplevelCommand = Command{
-		Names:   []string{"expense"},
-		doc:     "analyze expenses",
+		Names: []string{"expense"},
+		doc: "analyze expenses.\n\n" +
+			"The commands rely on the following environment variables:\n" +
+			"- $USER to determine the current username to associate with created operation;\n" +
+			"- $EXPENSE_DB to define the location of the sqlite database;\n" +
+			"  the default is in ~/.config/expense/db.sqlite.",
 		Execute: printHelp,
 		id:      1,
 		subcommands: []Command{
 			{
 				Names:   []string{"help", "--help", "-h"},
-				doc:     "print this usage information",
+				doc:     "print this usage information.",
 				Execute: printHelp,
 				id:      2,
 			},
 			{
 				Names:   []string{"user"},
-				doc:     "analyze or modify users",
+				doc:     "view or modify users.",
 				Execute: listUsers,
 				id:      3,
 				subcommands: []Command{
 					{
 						Names:   []string{"help", "--help", "-h"},
-						doc:     "print this usage information",
+						doc:     "print this usage information.",
 						Execute: printHelp,
 						id:      4,
 					},
 					{
 						Names:   []string{"list"},
-						doc:     "list the known usernames",
+						doc:     "list the known usernames.",
 						Execute: listUsers,
 						id:      5,
 					},
@@ -127,15 +131,17 @@ func helpString(params *Params) string {
 		usageLine += "[commands]"
 	}
 
-	var commandHelp string
+	commandDoc := lastCommand.doc
+
+	var commandsHelp string
 	if hasCommands {
-		commandHelp = "Commands:\n"
+		commandsHelp = "Commands:\n"
 		for _, command := range lastCommand.subcommands {
-			commandHelp += "- " + command.Names[0] + ": " + command.doc + "\n"
+			commandsHelp += "- " + command.Names[0] + ": " + command.doc + "\n"
 		}
 	}
 
-	return usageLine + "\n\n" + commandHelp
+	return usageLine + "\n\nUse it to " + commandDoc + "\n\n" + commandsHelp
 }
 
 func listUsers(params *Params, store *Store) {

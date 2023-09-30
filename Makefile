@@ -5,6 +5,7 @@ expense: $(GOFILES)
 
 test: $(GOFILES) ./expense
 	go test ./src ./cmd
+	rm cmd/.test*.sqlite
 
 clean:
 	rm expense

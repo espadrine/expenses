@@ -31,13 +31,20 @@ func NewDB() (*Store, error) {
 
 func initConfig() (db *sql.DB, alreadyInit bool, err error) {
 	alreadyInit = true
+
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return
 	}
 	configPath := filepath.Join(homeDir, ".config")
 	expensePath := filepath.Join(configPath, "expense")
-	dbPath := filepath.Join(expensePath, "db.sqlite")
+	defaultDBPath := filepath.Join(expensePath, "db.sqlite")
+	expenseDBEnv := os.Getenv("EXPENSE_DB")
+
+	dbPath := defaultDBPath
+	if expenseDBEnv != "" {
+		dbPath = expenseDBEnv
+	}
 
 	// Ensure ~/.config is there.
 	_, err = os.Stat(configPath)
@@ -61,6 +68,12 @@ func initConfig() (db *sql.DB, alreadyInit bool, err error) {
 		}
 	} else if err != nil {
 		return
+	}
+
+	// Check whether the database file exists.
+	_, err = os.Stat(dbPath)
+	if os.IsNotExist(err) {
+		alreadyInit = false
 	}
 
 	db, err = sql.Open("sqlite3", dbPath)
