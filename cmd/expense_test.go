@@ -57,7 +57,8 @@ func TestMain(t *testing.T) {
 							"\n"+
 							"Commands:\n"+
 							"- help: print this usage information.\n"+
-							"- list: list the known usernames.\n"
+							"- list: list the known usernames.\n"+
+							"- create: add a new user. It takes a single parameter, its username, and returns its user ID.\n"
 					},
 				},
 			},
@@ -74,6 +75,19 @@ func TestMain(t *testing.T) {
 					args: []string{"user", "list"},
 					stdout: func(stdout string) bool {
 						matched, err := regexp.MatchString("[a-z2-7]{26}\tusername", stdout)
+						if err != nil {
+							log.Fatal(err)
+						}
+						return matched
+					},
+				},
+				{
+					args: []string{"user", "create", "archimedes"},
+				},
+				{
+					args: []string{"user", "list"},
+					stdout: func(stdout string) bool {
+						matched, err := regexp.MatchString("[a-z2-7]{26}\tusername\n[a-z2-7]{26}\tarchimedes", stdout)
 						if err != nil {
 							log.Fatal(err)
 						}

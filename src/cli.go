@@ -45,6 +45,13 @@ func init() {
 						Execute: listUsers,
 						id:      5,
 					},
+					{
+						Names: []string{"create"},
+						doc: "add a new user. " +
+							"It takes a single parameter, its username, and returns its user ID.",
+						Execute: createUser,
+						id:      6,
+					},
 				},
 			},
 		},
@@ -66,6 +73,7 @@ func (c *Command) String() string {
 type Params struct {
 	Command      Command
 	CommandChain []Command
+	Args         []string
 }
 
 func (p *Params) String() string {
@@ -79,26 +87,27 @@ func (p *Params) String() string {
 
 func ParseFlags(args []string) Params {
 	var params Params
-	params.CommandChain = parseCommandChain(args, toplevelCommand)
+	params.CommandChain, params.Args = parseCommandChain(args, toplevelCommand)
 	params.Command = params.CommandChain[len(params.CommandChain)-1]
 	return params
 }
 
-func parseCommandChain(args []string, command Command) []Command {
+func parseCommandChain(args []string, command Command) ([]Command, []string) {
 	if len(args) == 0 {
-		return []Command{command} // Default command (typically the help).
+		return []Command{command}, []string{} // Default command (typically the help).
 	}
 	commandName := args[0]
 	for _, c := range command.subcommands {
 		if slices.Contains(c.Names, commandName) {
 			if len(args) > 1 && isSubcommandName(args[1], c) {
-				return append([]Command{command}, parseCommandChain(args[1:], c)...)
+				cmdChain, cmdArgs := parseCommandChain(args[1:], c)
+				return append([]Command{command}, cmdChain...), cmdArgs
 			} else {
-				return []Command{command, c}
+				return []Command{command, c}, args[1:]
 			}
 		}
 	}
-	return []Command{command} // Default command (typically the help).
+	return []Command{command}, args[1:] // Default command (typically the help).
 }
 
 func isSubcommandName(name string, command Command) bool {
@@ -152,4 +161,12 @@ func listUsers(params *Params, store *Store) {
 	for _, user := range users {
 		fmt.Println(user.id + "\t" + user.name)
 	}
+}
+
+func createUser(params *Params, store *Store) {
+	user, err := store.createUser(params.Args[0])
+	if err != nil {
+		log.Fatalf("createUsers: %s\n", err)
+	}
+	fmt.Println(user.id)
 }
