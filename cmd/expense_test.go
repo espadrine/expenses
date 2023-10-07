@@ -15,10 +15,10 @@ func TestMain(t *testing.T) {
 	// Smoe tests require sequential execution of commands,
 	// to check the effect of previous commands.
 	type command struct {
-		before func(ti int)
-		args   []string
-		stdout func(stdout string) bool
-		stderr func(stderr string) bool
+		args      []string
+		buildArgs func(ti int, env map[string]string) []string
+		stdout    func(stdout string, env map[string]string) bool
+		stderr    func(stderr string, env map[string]string) bool
 	}
 	tests := []struct {
 		commands []command
@@ -29,7 +29,7 @@ func TestMain(t *testing.T) {
 			commands: []command{
 				{
 					args: []string{"help"},
-					stderr: func(stderr string) bool {
+					stderr: func(stderr string, env map[string]string) bool {
 						return stderr == "usage: expense [commands]\n"+
 							"\n"+
 							"Use it to analyze expenses.\n"+
@@ -50,7 +50,7 @@ func TestMain(t *testing.T) {
 			commands: []command{
 				{
 					args: []string{"user", "help"},
-					stderr: func(stderr string) bool {
+					stderr: func(stderr string, env map[string]string) bool {
 						return stderr == "usage: expense user [commands]\n"+
 							"\n"+
 							"Use it to view or modify users.\n"+
@@ -58,7 +58,8 @@ func TestMain(t *testing.T) {
 							"Commands:\n"+
 							"- help: print this usage information.\n"+
 							"- list: list the known usernames.\n"+
-							"- create: add a new user. It takes a single parameter, its username, and returns its user ID.\n"
+							"- create: add a new user. It takes a single parameter, its username, and returns its user ID.\n"+
+							"- name: get the username associated with a user ID.\n"
 					},
 				},
 			},
@@ -68,12 +69,12 @@ func TestMain(t *testing.T) {
 		{
 			commands: []command{
 				{
-					before: func(ti int) {
+					buildArgs: func(ti int, env map[string]string) []string {
 						os.Setenv("USER", "username")
 						os.Setenv("EXPENSE_DB", fmt.Sprintf("./.test%d.sqlite", ti))
+						return []string{"user", "list"}
 					},
-					args: []string{"user", "list"},
-					stdout: func(stdout string) bool {
+					stdout: func(stdout string, env map[string]string) bool {
 						matched, err := regexp.MatchString("[a-z2-7]{26}\tusername", stdout)
 						if err != nil {
 							log.Fatal(err)
@@ -83,10 +84,14 @@ func TestMain(t *testing.T) {
 				},
 				{
 					args: []string{"user", "create", "archimedes"},
+					stdout: func(stdout string, env map[string]string) bool {
+						env["archimedesUserID"] = strings.TrimSpace(stdout)
+						return true
+					},
 				},
 				{
 					args: []string{"user", "list"},
-					stdout: func(stdout string) bool {
+					stdout: func(stdout string, env map[string]string) bool {
 						matched, err := regexp.MatchString("[a-z2-7]{26}\tusername\n[a-z2-7]{26}\tarchimedes", stdout)
 						if err != nil {
 							log.Fatal(err)
@@ -94,25 +99,37 @@ func TestMain(t *testing.T) {
 						return matched
 					},
 				},
+				{
+					buildArgs: func(ti int, env map[string]string) []string {
+						return []string{"user", "name", env["archimedesUserID"]}
+					},
+					stdout: func(stdout string, env map[string]string) bool {
+						return stdout == "archimedes\n"
+					},
+				},
 			},
 		},
 	}
 
 	for ti, test := range tests {
+		// A fresh environment for each test,
+		// to communicate data between commands.
+		env := make(map[string]string)
 		for _, command := range test.commands {
-			if command.before != nil {
-				command.before(ti)
+			args := command.args
+			if command.buildArgs != nil {
+				args = command.buildArgs(ti, env)
 			}
-			stdout, stderr, err := execute(command.args)
+			stdout, stderr, err := execute(args)
 			if err != nil {
 				log.Fatal("Error on test #", ti, ": ", err, "\n", "stdout: ", stdout, "\n", "stderr: ", stderr)
 			}
 
-			if command.stdout != nil && !command.stdout(stdout) {
+			if command.stdout != nil && !command.stdout(stdout, env) {
 				t.Errorf("Test %d: command `%s` yielded invalid output\n\n%s",
 					ti, "expense "+strings.Join(command.args, " "), stdout)
 			}
-			if command.stderr != nil && !command.stderr(stderr) {
+			if command.stderr != nil && !command.stderr(stderr, env) {
 				t.Errorf("Test %d: command `%s` yielded invalid error message\n\n%s",
 					ti, "expense "+strings.Join(command.args, " "), stderr)
 			}

@@ -22,8 +22,8 @@ func (s *Store) getUsers() (users []User, err error) {
 	return users, nil
 }
 
-func (s *Store) getUser(username string) (*User, error) {
-	row := s.db.QueryRow("select id, name from users where name = ? limit 1", username)
+func (s *Store) getUser(userID string) (*User, error) {
+	row := s.db.QueryRow("select id, name from users where id = ? limit 1", userID)
 	var id, name string
 	err := row.Scan(&id, &name)
 	if err != nil {

@@ -87,6 +87,19 @@ func TestFlags(t *testing.T) {
 					toplevelCommand.subcommands[1],
 					toplevelCommand.subcommands[1].subcommands[2],
 				},
+				Args: []string{"archimedes"},
+			},
+		},
+		{
+			args: []string{"user", "name", "6gqsxomsj3hir4msckf4wxtmsuoqa3w5"},
+			params: Params{
+				Command: toplevelCommand.subcommands[1].subcommands[3],
+				CommandChain: []Command{
+					toplevelCommand,
+					toplevelCommand.subcommands[1],
+					toplevelCommand.subcommands[1].subcommands[3],
+				},
+				Args: []string{"6gqsxomsj3hir4msckf4wxtmsuoqa3w5"},
 			},
 		},
 	}
@@ -111,5 +124,14 @@ func matchesParams(params Params, expectedParams Params) bool {
 		}
 	}
 	sameCommandChain := sameCommandChainLength && chainContainsExpectedCommands
-	return sameCommand && sameCommandChain
+
+	sameArgs := true
+	for i, arg := range params.Args {
+		if arg != expectedParams.Args[i] {
+			sameArgs = false
+			break
+		}
+	}
+
+	return sameCommand && sameCommandChain && sameArgs
 }

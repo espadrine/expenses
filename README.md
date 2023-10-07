@@ -11,9 +11,9 @@ in ~/.config/expense/db.sqlite and initialize the default user (using `$USER`).
 
 You may explicitly create and manage users with the following commands:
 
-    $ expense user create my_user_name  # Not yet available
+    $ expense user create my_user_name
     6gqsxomsj3hir4msckf4wxtmsuoqa3w5
-    $ expense user name 6gqsxomsj3hir4msckf4wxtmsuoqa3w5  # Not yet available
+    $ expense user name 6gqsxomsj3hir4msckf4wxtmsuoqa3w5
     my_user_name
     $ expense user id my_user_name  # Not yet available
     6gqsxomsj3hir4msckf4wxtmsuoqa3w5

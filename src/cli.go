@@ -52,6 +52,12 @@ func init() {
 						Execute: createUser,
 						id:      6,
 					},
+					{
+						Names:   []string{"name"},
+						doc:     "get the username associated with a user ID.",
+						Execute: getUserName,
+						id:      7,
+					},
 				},
 			},
 		},
@@ -169,4 +175,13 @@ func createUser(params *Params, store *Store) {
 		log.Fatalf("createUsers: %s\n", err)
 	}
 	fmt.Println(user.id)
+}
+
+func getUserName(params *Params, store *Store) {
+	userID := params.Args[0]
+	user, err := store.getUser(userID)
+	if err != nil {
+		log.Fatalf("getUserName: %s\n", err)
+	}
+	fmt.Println(user.name)
 }
