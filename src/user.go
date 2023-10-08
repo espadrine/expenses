@@ -14,10 +14,10 @@ func (s *Store) getUsers() (users []User, err error) {
 	for rows.Next() {
 		var id, name string
 		err = rows.Scan(&id, &name)
-		users = append(users, User{id, name})
 		if err != nil {
 			return []User{}, err
 		}
+		users = append(users, User{id, name})
 	}
 	return users, nil
 }
@@ -30,6 +30,23 @@ func (s *Store) getUser(userID string) (*User, error) {
 		return nil, err
 	}
 	return &User{id, name}, nil
+}
+
+func (s *Store) getUserIDs(username string) (users []User, err error) {
+	rows, err := s.db.Query("select id, name from users where name = ?", username)
+	if err != nil {
+		return []User{}, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id, name string
+		err = rows.Scan(&id, &name)
+		if err != nil {
+			return []User{}, err
+		}
+		users = append(users, User{id, name})
+	}
+	return users, nil
 }
 
 func (s *Store) createUser(username string) (*User, error) {

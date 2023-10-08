@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -59,7 +60,8 @@ func TestMain(t *testing.T) {
 							"- help: print this usage information.\n"+
 							"- list: list the known usernames.\n"+
 							"- create: add a new user. It takes a single parameter, its username, and returns its user ID.\n"+
-							"- name: get the username associated with a user ID.\n"
+							"- name: get the username associated with a user ID.\n"+
+							"- id: get the user IDs associated with a username.\n"
 					},
 				},
 			},
@@ -92,7 +94,7 @@ func TestMain(t *testing.T) {
 				{
 					args: []string{"user", "list"},
 					stdout: func(stdout string, env map[string]string) bool {
-						matched, err := regexp.MatchString("[a-z2-7]{26}\tusername\n[a-z2-7]{26}\tarchimedes", stdout)
+						matched, err := regexp.MatchString("[a-z2-7]{26}\t(username|archimedes)\n[a-z2-7]{26}\t(username|archimedes)", stdout)
 						if err != nil {
 							log.Fatal(err)
 						}
@@ -107,6 +109,28 @@ func TestMain(t *testing.T) {
 						return stdout == "archimedes\n"
 					},
 				},
+				{
+					args: []string{"user", "id", "archimedes"},
+					stdout: func(stdout string, env map[string]string) bool {
+						return stdout == env["archimedesUserID"]+"\n"
+					},
+				},
+				{
+					args: []string{"user", "create", "archimedes"},
+					stdout: func(stdout string, env map[string]string) bool {
+						env["archimedesUserID2"] = strings.TrimSpace(stdout)
+						return true
+					},
+				},
+				{
+					args: []string{"user", "id", "archimedes"},
+					stdout: func(stdout string, env map[string]string) bool {
+						ids := strings.Split(strings.TrimSpace(stdout), "\n")
+						return len(ids) == 2 &&
+							slices.Contains(ids, env["archimedesUserID"]) &&
+							slices.Contains(ids, env["archimedesUserID2"])
+					},
+				},
 			},
 		},
 	}
@@ -115,7 +139,7 @@ func TestMain(t *testing.T) {
 		// A fresh environment for each test,
 		// to communicate data between commands.
 		env := make(map[string]string)
-		for _, command := range test.commands {
+		for ci, command := range test.commands {
 			args := command.args
 			if command.buildArgs != nil {
 				args = command.buildArgs(ti, env)
@@ -126,12 +150,12 @@ func TestMain(t *testing.T) {
 			}
 
 			if command.stdout != nil && !command.stdout(stdout, env) {
-				t.Errorf("Test %d: command `%s` yielded invalid output\n\n%s",
-					ti, "expense "+strings.Join(command.args, " "), stdout)
+				t.Errorf("Test %d: command %d `%s` yielded invalid output\n\n%s",
+					ti, ci, "expense "+strings.Join(command.args, " "), stdout)
 			}
 			if command.stderr != nil && !command.stderr(stderr, env) {
-				t.Errorf("Test %d: command `%s` yielded invalid error message\n\n%s",
-					ti, "expense "+strings.Join(command.args, " "), stderr)
+				t.Errorf("Test %d: command %d `%s` yielded invalid error message\n\n%s",
+					ti, ci, "expense "+strings.Join(command.args, " "), stderr)
 			}
 		}
 	}

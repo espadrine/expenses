@@ -15,7 +15,7 @@ You may explicitly create and manage users with the following commands:
     6gqsxomsj3hir4msckf4wxtmsuoqa3w5
     $ expense user name 6gqsxomsj3hir4msckf4wxtmsuoqa3w5
     my_user_name
-    $ expense user id my_user_name  # Not yet available
+    $ expense user id my_user_name
     6gqsxomsj3hir4msckf4wxtmsuoqa3w5
     $ expense user list
     6gqsxomsj3hir4msckf4wxtmsuoqa3w5	my_user_name

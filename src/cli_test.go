@@ -102,6 +102,18 @@ func TestFlags(t *testing.T) {
 				Args: []string{"6gqsxomsj3hir4msckf4wxtmsuoqa3w5"},
 			},
 		},
+		{
+			args: []string{"user", "id", "archimedes"},
+			params: Params{
+				Command: toplevelCommand.subcommands[1].subcommands[4],
+				CommandChain: []Command{
+					toplevelCommand,
+					toplevelCommand.subcommands[1],
+					toplevelCommand.subcommands[1].subcommands[4],
+				},
+				Args: []string{"archimedes"},
+			},
+		},
 	}
 	for _, test := range tests {
 		params := ParseFlags(test.args)

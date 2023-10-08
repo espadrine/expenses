@@ -58,6 +58,12 @@ func init() {
 						Execute: getUserName,
 						id:      7,
 					},
+					{
+						Names:   []string{"id"},
+						doc:     "get the user IDs associated with a username.",
+						Execute: getUserIDs,
+						id:      8,
+					},
 				},
 			},
 		},
@@ -184,4 +190,15 @@ func getUserName(params *Params, store *Store) {
 		log.Fatalf("getUserName: %s\n", err)
 	}
 	fmt.Println(user.name)
+}
+
+func getUserIDs(params *Params, store *Store) {
+	username := params.Args[0]
+	users, err := store.getUserIDs(username)
+	if err != nil {
+		log.Fatalf("getUserIDs: %s\n", err)
+	}
+	for _, user := range users {
+		fmt.Println(user.id)
+	}
 }
